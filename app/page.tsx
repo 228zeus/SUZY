@@ -14,27 +14,30 @@ export default function SuzyWaitlist() {
   const [email, setEmail] = useState("")
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
+  const [errorMessage, setErrorMessage] = useState("")
+
   async function handleSubmit() {
     if (!email || !email.includes("@")) return
     setStatus("loading")
+    setErrorMessage("")
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/waitlist`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            "Prefer": "return=minimal",
-          },
-          body: JSON.stringify({ email, created_at: new Date().toISOString() }),
-        }
-      )
-      setStatus(res.ok || res.status === 201 ? "success" : "error")
-      if (res.ok || res.status === 201) setEmail("")
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
+      
+      if (res.ok) {
+        setStatus("success")
+        setEmail("")
+      } else {
+        setStatus("error")
+        setErrorMessage(data.error || "Etwas ist schiefgelaufen.")
+      }
     } catch {
       setStatus("error")
+      setErrorMessage("Etwas ist schiefgelaufen — bitte erneut versuchen.")
     }
   }
 
@@ -120,7 +123,7 @@ export default function SuzyWaitlist() {
 
               {status === "error" && (
                 <span className="text-xs text-destructive">
-                  Etwas ist schiefgelaufen — bitte erneut versuchen.
+                  {errorMessage}
                 </span>
               )}
 
